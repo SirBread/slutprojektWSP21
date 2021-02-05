@@ -1,0 +1,13 @@
+h1 alla dina todos #{session[:id] }
+
+- todos.each do |todo|
+    p = todo["content"]
+
+
+h2 Skapa todos
+form action="maketodo" method="post"
+  input type="text" name="task" placeholder="Vad ska du göra"
+  input type="submit" value="Skapa"
+
+h3 
+    a href="/update_todos" Update
