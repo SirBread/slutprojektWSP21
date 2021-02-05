@@ -1,0 +1,20 @@
+h2 Friends
+- friends.each do |todo|
+    p = todo["Friendsname"]
+
+
+h2 Groups
+- groups.each do |todo|
+    p = todo["Groupname"]
+
+
+h3 Lägg till en vän
+form action="addfriend" method="post"
+  input type="text" name="friendname" placeholder="Namn och efternamn"
+  input type="submit" value="Skapa"
+
+
+h3 Gå med i en grupp
+form action="joingroup" method="post"
+  input type="text" name="joingroup" placeholder="Gruppens namn"
+  input type="submit" value="Skapa"
