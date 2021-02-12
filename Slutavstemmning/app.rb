@@ -17,6 +17,8 @@ def set_error(string)
   return session[:error]
 end
 
+db = SQLite3::Database.new("db/todos.db")
+
 get('/') do
   slim(:register)
 end
@@ -38,8 +40,6 @@ post('/login') do
     set_error("Du skrev inget användarnamn")
     redirect('/error')
   end
-
-  db = SQLite3::Database.new("db/todos.db")
   db.results_as_hash = true
   result = db.execute("SELECT * FROM users WHERE name = ?" ,username).first 
   checkpass = result["password"]
@@ -63,7 +63,6 @@ end
 post("/update") do
   update_todo = params[:update_todo]
   todo_updated = params[:todo_updated]
-  db = SQLite3::Database.new('db/todos.db')
   id = session[:ID].to_i 
   db.results_as_hash = true
   result = db.execute("UPDATE todos SET content =REPLACE(content, ?, ?) WHERE userid = ?",update_todo, todo_updated, id)
@@ -72,7 +71,6 @@ end
 
 post('/delete') do
   todo_delete = params[:todo_delete]
-  db = SQLite3::Database.new('db/todos.db')
   id = session[:ID].to_i 
   db.results_as_hash = true
   db.execute("DELETE FROM todos WHERE content = ?", todo_delete)
@@ -81,7 +79,6 @@ end
 
 get("/todo") do 
   id = session[:ID].to_i
-  db = SQLite3::Database.new("db/todos.db")
   db.results_as_hash = true
   dbresult = db.execute("SELECT * FROM todos WHERE userid = ?" ,id)
   p "Här är alla dina todos #{dbresult}"
@@ -91,7 +88,6 @@ end
 post("/maketodo") do 
   id = session[:ID].to_i
   task = params[:task]
-  db = SQLite3::Database.new("db/todos.db")
   db.results_as_hash = true
   if task != nil
     db.execute("INSERT INTO todos (content, userid) VALUES (?,?)", task, id)
