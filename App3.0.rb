@@ -11,7 +11,7 @@ end
 
 get('/error') do 
     session[:error]
-  end
+end
 
 
 db = SQLite3::Database.new("db/databas.db")
@@ -38,7 +38,10 @@ post ("/login") do
     result = db.execute("SELECT * FROM Users WHERE Name = ?" ,username).first 
     checkpass = result["password"]
     id = result["Userid"]
-  
+    p id
+    p checkpass
+    p result
+    db.results_as_hash = false
     if BCrypt::Password.new(checkpass) == password
       session[:ID] = id
       p session[:ID]
@@ -76,18 +79,36 @@ post('/register/new') do
 end
 
 get "/home" do
-    db.results_as_hash = true
-    dbfriendid=db.execute("Select Friendid FROM Friends_to_users WHERE Userid = ?", session[:ID])
-    dbfriends=db.execute("Select Name FROM Users WHERE Userid = ?", dbfriendid)
-    dbgroups=db.execute("Select Groupname FROM Groups WHERE Users = ?", session[:ID])
-    p dbfriends
-    p dbgroups
-    slim(:"home/home",locals:{friends:dbfriends, groups:dbgroups})
+
+  db.results_as_hash = false
+  # HÄmta vänner till vännlistan
+  user_friend_ids=db.execute("SELECT Friendid FROM Friends_to_users WHERE Userid = ?",session[:ID])
+  p user_friend_ids
+  db.results_as_hash = true
+  namearray = user_friend_ids.map do |e|
+    place = db.execute("SELECT Name FROM Users WHERE Userid = ?", e)
+    place[0]
+  end
+  p "1"
+  p namearray
+  p "2"
+ # Kolla vännernas namn
+
+  # spara deras namn så dom kan visas
+
+  # Hämta grupp
+
+  # samma steg som vänner
+
+  # place holder
+  dbgroups = []
+  slim(:"home/home",locals:{friends:namearray, groups:dbgroups})
 end
 
 get "/friend" do 
+  db.results_as_hash = true
   names = db.execute("Select Name FROM Users")
-  p names
+  
   slim(:"home/Addfriend",locals:{names:names})
 end
 
@@ -95,15 +116,15 @@ post ("/addfriend") do
 
   #no such bind parameter
   #FEL
-
+  db.results_as_hash = true
   friendname=params[:friendname]
-  friendid = db.execute("Select Userid FROM Users WHERE Name = ?", friendname)
-  if friendid != []
+  friendid = db.get_first_value("Select Userid FROM Users WHERE Name = ?", friendname)
+  p friendid
+  if friendid != nil
     db.execute("INSERT INTO Friends_to_users (Userid,Friendid) VALUES (?,?)",session[:ID],friendid)
     redirect("/home")
   else
-   set_error("Det finns ingen med det namnet")
-   redirect("/error")
+    set_error("Användaren finns inte")
+    redirect("/error")
   end
 end
-
