@@ -36,7 +36,7 @@ post ("/login") do
     end
   
 
-    result = getdatawithconditionhash(*,User,Name,username) 
+    result = getdatawithconditionhash("*","Users","Name",username)
     # result = db.execute("SELECT * FROM Users WHERE Name = ?" ,username).first 
     checkpass = result["password"]
     id = result["Userid"]

@@ -1,20 +1,27 @@
+require 'sinatra'
+require 'slim'
+require 'sqlite3'
+require 'bcrypt'
+require 'byebug'
+enable :sessions
+
 def connect()
-    SQLite3::Database.new("db/databas.db")
+    db = SQLite3::Database.new("db/databas.db")
+    db.results_as_hash = true
+    return db
 end
 
 def getdatawithconditionhash(x,y,z,q)
-    connect.results_as_hash = true
-    return connect.execute("SELECT x FROM y WHERE z = ?" ,q).first 
+    return connect.execute("SELECT #{x} FROM #{y} WHERE #{z} = ?",q).first 
 end
 
 def getdataashash(x,y)
-    connect.results_as_hash = true
-    connect.execute("SELECT x FROM y")
+    connect.execute("SELECT #{x} FROM #{y}")
 end
 
 def getdatawithcondition(x,y,z,q)
     connect.results_as_hash = false
-    return connect.execute("SELECT x FROM y WHERE z = ?" ,q).first 
+    return connect.execute("SELECT #{x} FROM #{y} WHERE #{z} = ?" ,q).first 
 end
 
 def passwordgen(x,y)
@@ -31,7 +38,6 @@ def newpasswrd(x)
     insertinto(Users,Name,password,username,scrambledpsw)
 end
 def removedubblearrayandgetnames(x)
-    connect.results_as_hash = true
     namearray = x.map do |e|
         place = connect.execute("SELECT Name FROM Users WHERE Userid = ?", e)
         place[0]
@@ -48,12 +54,9 @@ def checkifadmin(x)
 end
 
 def getfirstvaluehash(x,y,z,q)
-    connect.results_as_hash = true
-    return connect.get_first_value("Select x FROM y WHERE z = ?", q)
+    return connect.get_first_value("Select ? FROM ? WHERE ? = ?",x,y,z,q)
 end
 
 def insertinto(x,y,z,q,g)
-    connect.results_as_hash = true
-    connect.execute("INSERT INTO x (y,z) VALUES (?,?)",q,g)
-
+    connect.execute("INSERT INTO ? (?,?) VALUES (?,?)",x,y,z,q,g)
 end    
