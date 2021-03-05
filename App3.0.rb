@@ -2,7 +2,9 @@ require 'sinatra'
 require 'slim'
 require 'sqlite3'
 require 'bcrypt'
+require 'byebug'
 enable :sessions
+require_relative './model.rb'
 
 def set_error(string)
   session[:error] = string
@@ -14,7 +16,7 @@ get('/error') do
 end
 
 
-db = SQLite3::Database.new("db/databas.db")
+# db = SQLite3::Database.new("db/databas.db")
 
 get('/') do
   slim(:start)
@@ -34,15 +36,15 @@ post ("/login") do
     end
   
 
-    db.results_as_hash = true
-    result = db.execute("SELECT * FROM Users WHERE Name = ?" ,username).first 
+    result = getdatawithconditionhash(*,User,Name,username) 
+    # result = db.execute("SELECT * FROM Users WHERE Name = ?" ,username).first 
     checkpass = result["password"]
     id = result["Userid"]
     p id
     p checkpass
     p result
-    db.results_as_hash = false
-    if BCrypt::Password.new(checkpass) == password
+  
+    if passwordgen(checkpass,password)
       session[:ID] = id
       p session[:ID]
       redirect('/home')
@@ -61,13 +63,16 @@ post('/register/new') do
     username=params[:username]
     password=params[:password]
     passwordconf=params[:password_conf]
-    usernamecheck = db.execute("SELECT Name FROM Users WHERE Name = ?" ,username)
+
+  usernamecheck = getdatawithconditionhash(Name,Users,Name,username)
+    # usernamecheck = db.execute("SELECT Name FROM Users WHERE Name = ?" ,username)
     
     p usernamecheck
     if  usernamecheck == []
       if password == passwordconf
-        scrambledpsw = BCrypt::Password.create(password)
-              db.execute("INSERT INTO Users (Name,password) VALUES (?,?)",username,scrambledpsw)
+        newpasswrd(password)
+        # scrambledpsw = BCrypt::Password.create(password)
+        #db.execute("INSERT INTO Users (Name,password) VALUES (?,?)",username,scrambledpsw)
       else
         redirect("/home")
       end
@@ -80,15 +85,15 @@ end
 
 get "/home" do
 
-  db.results_as_hash = false
+ user_friend_ids = getdatawithcondition(Friendid, Friends_to_users, Userid,session[:ID])
   # HÄmta vänner till vännlistan
-  user_friend_ids=db.execute("SELECT Friendid FROM Friends_to_users WHERE Userid = ?",session[:ID])
+  # user_friend_ids=db.execute("SELECT Friendid FROM Friends_to_users WHERE Userid = ?",session[:ID])
   p user_friend_ids
-  db.results_as_hash = true
-  namearray = user_friend_ids.map do |e|
-    place = db.execute("SELECT Name FROM Users WHERE Userid = ?", e)
-    place[0]
-  end
+  namearray = removedubblearrayandgetnames(user_friend_ids)
+  # namearray = user_friend_ids.map do |e|
+  #   place = db.execute("SELECT Name FROM Users WHERE Userid = ?", e)
+  #   place[0]
+  # end
   p "1"
   p namearray
   p "2"
@@ -106,8 +111,10 @@ get "/home" do
 end
 
 get "/friend" do 
-  db.results_as_hash = true
-  names = db.execute("Select Name FROM Users")
+
+  names = getdataashash(Name,Users)
+  # db.results_as_hash = true
+  # names = db.execute("Select Name FROM Users")
   
   slim(:"home/Addfriend",locals:{names:names})
 end
@@ -116,12 +123,13 @@ post ("/addfriend") do
 
   #no such bind parameter
   #FEL
-  db.results_as_hash = true
   friendname=params[:friendname]
-  friendid = db.get_first_value("Select Userid FROM Users WHERE Name = ?", friendname)
+  friendid = getfirstvaluehash(Userid,Users,Name,friendname)
+  # friendid = db.get_first_value("Select Userid FROM Users WHERE Name = ?", friendname)
   p friendid
   if friendid != nil
-    db.execute("INSERT INTO Friends_to_users (Userid,Friendid) VALUES (?,?)",session[:ID],friendid)
+    insertinto(Friends_to_users,Userid,friendid,session[:ID],friendid)
+    # db.execute("INSERT INTO Friends_to_users (Userid,Friendid) VALUES (?,?)",session[:ID],friendid)
     redirect("/home")
   else
     set_error("Användaren finns inte")
