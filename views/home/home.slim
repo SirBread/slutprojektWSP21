@@ -1,7 +1,7 @@
 h2 Friends
 - p friends
-- friends.each do |todo|
-    p = todo["Name"]
+- friends.each_with_index do |todo,e|
+    p = todo[e]
 
 
 h2 Groups
@@ -10,9 +10,11 @@ h2 Groups
 
 
 a href="/friend" Lägg till en vän
+br/
+a href="/group" gå med i en grupp
 
 
-h3 Gå med i en grupp
-form action="joingroup" method="post"
-  input type="text" name="joingroup" placeholder="Gruppens namn"
+h3 Stara en grupp
+form action="creatgroup" method="post"
+  input type="text" name="groupname" placeholder="Gruppens namn"
   input type="submit" value="Skapa"
