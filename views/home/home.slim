@@ -1,7 +1,6 @@
 h2 Friends
-- p friends
-- friends.each_with_index do |todo,e|
-    p = todo[e]
+- friends.each do |todo|
+    p = todo["Name"]
 
 
 h2 Groups
@@ -18,3 +17,13 @@ h3 Stara en grupp
 form action="creatgroup" method="post"
   input type="text" name="groupname" placeholder="Gruppens namn"
   input type="submit" value="Skapa"
+
+
+h4 ta bort en vän 
+form action="removefriend" method="post"
+  input type="text" name="friendname" placeholder="Namn"
+  input type="submit" value="Ta bort"
+h4 lämna en grupp
+form action="leavegroup" method="post"
+  input type="text" name="groupname" placeholder="Gruppens namn"
+  input type="submit" value="Ta bort"

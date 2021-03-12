@@ -15,9 +15,6 @@ get('/error') do
     session[:error]
 end
 
-
-# db = SQLite3::Database.new("db/databas.db")
-
 get('/') do
   slim(:start)
 end
@@ -39,12 +36,9 @@ post ("/login") do
     # result = db.execute("SELECT * FROM Users WHERE Name = ?" ,username).first
       checkpass = result["password"]
       id = result["Userid"]
-      p id
-      p checkpass
-      p result
+
       if passwordgen(checkpass,password)
         session[:ID] = id
-        p session[:ID]
         redirect('/home')
       else
         set_error("Lösenorden matchade inte")
@@ -67,13 +61,9 @@ post('/register/new') do
     passwordconf=params[:password_conf]
 
   usernamecheck = getdatawithconditionhash("Name","Users","Name",username)
-    # usernamecheck = db.execute("SELECT Name FROM Users WHERE Name = ?" ,username)
-    p usernamecheck
     if  usernamecheck == nil
       if password == passwordconf
         newpasswrd(password,username)
-        # scrambledpsw = BCrypt::Password.create(password)
-        #db.execute("INSERT INTO Users (Name,password) VALUES (?,?)",username,scrambledpsw)
       else
         redirect("/home")
       end
@@ -85,43 +75,27 @@ post('/register/new') do
 end
 
 get "/home" do
+   # Hämta vänners id till vännlistan
  user_friend_ids = getdatawithcondition("Friendid", "Friends_to_users", "Userid",session[:ID])
- # HÄmta vänner till vännlistan
-  # user_friend_ids=db.execute("SELECT Friendid FROM Friends_to_users WHERE Userid = ?",session[:ID])
+ # Hämta vänners namn till vännlistan
   namearray = removedubblearrayandgetnames(user_friend_ids,"Name","Users")
-  # namearray = user_friend_ids.map do |e|
-  #   place = db.execute("SELECT Name FROM Users WHERE Userid = ?", e)
-  #   place[0]
-  # end
-  # Hämta grupp
-
+  # Hämta grupp alla gruppid som userid är kopplat till
   groupid = getdatawithcondition("GroupId", "Group_to_users", "Userid",session[:ID])
+    # Kolla vilka namn som går ihop med id:t
   namegroups = removedubblearrayandgetnamesasd(groupid,"Groupname","Groups")
-  p namegroups
-  # samma steg som vänner
-  # place holder
   slim(:"home/home",locals:{friends:namearray, groups:namegroups})
 end
 
-get "/friend" do 
-
+get "/friend" do
   names = getdataashash("Name","Users")
-  # db.results_as_hash = true
-  # names = db.execute("Select Name FROM Users")
-  
   slim(:"home/Addfriend",locals:{names:names})
 end
 
 post ("/addfriend") do
-
-  #no such bind parameter
-  #FEL
   friendname=params[:friendname]
   friendid = getfirstvaluehash("Userid","Users","Name",friendname)
-  # friendid = db.get_first_value("Select Userid FROM Users WHERE Name = ?", friendname)
-  p friendid
   if friendid != nil
-    insertinto("Friends_to_users","Userid",friendid,session[:ID],friendid)
+    insertinto("Friends_to_users","Userid","Friendid",session[:ID],friendid)
     # db.execute("INSERT INTO Friends_to_users (Userid,Friendid) VALUES (?,?)",session[:ID],friendid)
     redirect("/home")
   else
@@ -130,39 +104,82 @@ post ("/addfriend") do
   end
 end
 
-post "/creatgroup" do
- if params[:groupname] != nil
-  insertinto("Groups","Users","Groupname",session[:ID],params[:groupname])
- else
+post("/creatgroup") do
+  if params[:groupname] != nil
+    if checkgroupsv2(params[:groupname]) == []
+      insertintowith3arguments("Groups","Groupname",params[:groupname])
+      groupid = getdatawithcondition("GroupId","Groups","Groupname",params[:groupname])
+      insertinto("Group_to_users","Userid","GroupId",session[:ID],groupid)
+    else 
+      set_error("Gruppen finns redan")
+      redirect("/error")
+    end
+  else
   set_error("Du skrev inget namn")
   redirect("/error")
- end
- redirect ("/home")
-end
+  end
+  redirect("/home")
+end 
 
 
 get "/group" do 
-  groupname = getdataashash("Name","Groups")
-  # db.results_as_hash = true
-  # names = db.execute("Select Name FROM Users")
-  
-  slim(:"home/Addfriend",locals:{names:groupname})
+  groupname = getdataashash("Groupname","Groups")
+  slim(:"home/Addgroup",locals:{names:groupname})
 end
 
 
 post ("/joingroup") do
-
-  #no such bind parameter
-  #FEL
-  friendname=params[:groupname]
-  friendid = getfirstvaluehash("Userid","Users","Name",groupname)
-  # friendid = db.get_first_value("Select Userid FROM Users WHERE Name = ?", friendname)
-  if friendid != nil
-    insertinto("Friends_to_users","Userid",friendid,session[:ID],friendid)
-    # db.execute("INSERT INTO Friends_to_users (Userid,Friendid) VALUES (?,?)",session[:ID],friendid)
-    redirect("/home")
+  groupid = getdatawithcondition("GroupId","Groups","Groupname",params[:groupname])
+  if checkgroups(session[:ID],groupid) != []
+    # friendid = db.get_first_value("Select Userid FROM Users WHERE Name = ?", friendname)
+    if groupid != []
+      insertinto("Group_to_users","Userid","GroupId",session[:ID],groupid)
+      # db.execute("INSERT INTO Friends_to_users (Userid,Friendid) VALUES (?,?)",session[:ID],friendid)
+      redirect("/home")
+    else
+      set_error("Gruppen finns inte")
+      redirect("/error")
+    end
   else
-    set_error("Användaren finns inte")
+    set_error("Du är redan med i denna gruppen")
+    redirect("/error")
+  end
+end
+
+
+post ("/removefriend") do
+  # Remove friend
+  if session[:ID] != nil
+    friendid = getdatawithcondition("Userid","Users","Name",params[:friendname])
+    if friendid != []
+      deletefrom("Friends_to_users","Friendid","Userid",friendid,session[:ID])
+      redirect("/home")
+    else
+      set_error("vännen finns inte")
+      redirect("/error")
+    end
+  end
+end
+
+post("/leavegroup") do 
+  if session[:ID] != nil
+    groupid = getdatawithcondition("GroupId","Groups","Groupname",params[:groupname])
+    if groupid != []
+      deletefrom("Group_to_users","GroupId","Userid",groupid,session[:ID])
+      redirect("/home")
+    else
+    set_error("gruppen finns inte")
+    redirect("/error")
+    end
+  end
+end
+
+
+get("/admin") do 
+  result = getdatawithconditionhash("admin","Users","Userid",session[:ID])
+  if result == 1
+  else
+    set_error("Användaren är inte admin")
     redirect("/error")
   end
 end

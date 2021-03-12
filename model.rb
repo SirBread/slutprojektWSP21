@@ -48,27 +48,18 @@ def newpasswrd(x,y)
     insertinto("Users","Name","password",y,scrambledpsw)
 end
 def removedubblearrayandgetnames(x,y,z)
-    p x
-    p y
-    p z
+
     placeholderarray = x.map do |e|
         place = connecthash.execute("SELECT #{y} FROM #{z} WHERE Userid = ?", e)
-        p place[0]
         place[0]
     end
-    p placeholderarray
     return placeholderarray
 end
 def removedubblearrayandgetnamesasd(x,y,z)
-    p x
-    p y
-    p z
     placeholderarray = x.map do |e|
         place = connecthash.execute("SELECT Groupname FROM Groups WHERE GroupId = ?",e)
-        p place[0]
         place[0]
     end
-    p placeholderarray
     return placeholderarray
 end
 
@@ -87,4 +78,19 @@ end
 
 def insertinto(x,y,z,q,g)
     connecthash.execute("INSERT INTO #{x} (#{y},#{z}) VALUES (?,?)",q,g)
-end    
+end
+
+def insertintowith3arguments(x,y,z)
+    connecthash.execute("INSERT INTO #{x} (#{y}) VALUES (?)",z)
+end
+
+def deletefrom(x,y,z,q,g)
+    connect.execute("DELETE FROM #{x} WHERE #{y} = ? AND #{z} = ?",q,g)
+end
+
+def checkgroups(x,y)
+    connect.execute("SELECT * FROM Group_to_users WHERE Userid = ? AND GroupId = ?",x,y)
+end
+def checkgroupsv2(x)
+    connect.execute("SELECT * FROM Groups WHERE Groupname = ?",x)
+end
